@@ -1,0 +1,66 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&family=Outfit:wght@100..900&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #f84565;
+  --color-primary-dull: #d63854;
+}
+
+* {
+  font-family: "Nunito Sans", sans-serif;
+  scrollbar-width: thin;
+  scrollbar-color: #787777 #1e1e1e;
+}
+
+body {
+  color: white;
+  background-color: #09090b;
+}
+
+@keyframes shine {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.button-bg {
+  background: conic-gradient(
+    from 0deg,
+    #e4e6e7b7,
+    #000,
+    #000,
+    #e4e6e7b7,
+    #000,
+    #000,
+    #000,
+    #e4e6e7b7
+  );
+  background-size: 300% 300%;
+  animation: shine 6s ease-out infinite;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+/* slide css */
+
+/* End slide css */
