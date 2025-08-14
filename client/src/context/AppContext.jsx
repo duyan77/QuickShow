@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
@@ -23,14 +24,15 @@ export const AppProvider = ({ children }) => {
 
   const fetchIsAdmin = async () => {
     try {
-      const { data } = await axios.get("/api/admin/is-admin", {
+      const { data } = await axios.get("/admin/is-admin", {
         headers: { Authorization: `Bearer ${await getToken()}` },
       });
       setIsAdmin(data.isAdmin);
+      console.log(await getToken());
 
       if (!data.isAdmin && location.pathname.startsWith("/admin")) {
         navigate("/");
-        toast.error("You are not authorized to access admin dashboard");
+        toast.error("Can not access admin dashboard");
       }
     } catch (error) {
       console.error(error);
@@ -39,7 +41,7 @@ export const AppProvider = ({ children }) => {
 
   const fetchShows = async () => {
     try {
-      const { data } = await axios.get("/api/show/all");
+      const { data } = await axios.get("/show/all");
       if (data.success) {
         setShows(data.shows);
       } else {
@@ -52,7 +54,7 @@ export const AppProvider = ({ children }) => {
 
   const fetchFavoriteMovies = async () => {
     try {
-      const { data } = await axios.get("/api/user/favorites", {
+      const { data } = await axios.get("/user/favorites", {
         headers: { Authorization: `Bearer ${await getToken()}` },
       });
 

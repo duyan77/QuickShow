@@ -3,6 +3,7 @@ import { Link, useNavigate, NavLink } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { MenuIcon, SearchIcon, Ticket, TicketPlus, XIcon } from "lucide-react";
 import { useClerk, UserButton, useUser } from "@clerk/clerk-react";
+import { useAppContext } from "../context/AppContext";
 
 const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,6 +11,8 @@ const NavBar = () => {
   const { openSignIn } = useClerk();
 
   const navigate = useNavigate();
+
+  const { favoriteMovies } = useAppContext();
 
   const handleClose = () => {
     scrollTo(0, 0);
@@ -102,19 +105,21 @@ const NavBar = () => {
           Movies
         </NavLink>
 
-        <NavLink
-          to="/favorite"
-          onClick={handleClose}
-          className={({ isActive }) =>
-            `px-[10px] py-[8px] ${
-              isActive
-                ? "text-[#FFFFFF] bg-[#F84565] rounded-[90px]"
-                : "hover:font-medium"
-            }`
-          }
-        >
-          Favorites
-        </NavLink>
+        {favoriteMovies.length > 0 && (
+          <NavLink
+            to="/favorite"
+            onClick={handleClose}
+            className={({ isActive }) =>
+              `px-[10px] py-[8px] ${
+                isActive
+                  ? "text-[#FFFFFF] bg-[#F84565] rounded-[90px]"
+                  : "hover:font-medium"
+              }`
+            }
+          >
+            Favorites
+          </NavLink>
+        )}
       </div>
 
       {/* search và login  */}

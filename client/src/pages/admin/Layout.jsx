@@ -1,18 +1,21 @@
-import React from "react";
+import React, { useEffect } from "react";
 import AdminNavbar from "../../components/admin/AdminNavbar";
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import { Outlet } from "react-router-dom";
 import Loading from "../../components/Loading";
 import BlurCircle from "../../components/BlurCircle";
+import { useAppContext } from "../../context/AppContext";
 
 const Layout = () => {
   document.body.classList.add("overflow-hidden");
 
-  // useEffect(() => {
-  //   fetchIsAdmin();
-  // }, []);
+  const { isAdmin, fetchIsAdmin } = useAppContext();
 
-  return (
+  useEffect(() => {
+    fetchIsAdmin();
+  }, [fetchIsAdmin]);
+
+  return isAdmin ? (
     <>
       <AdminNavbar />
       <div className="flex">
@@ -23,6 +26,8 @@ const Layout = () => {
         </div>
       </div>
     </>
+  ) : (
+    <Loading />
   );
 };
 
