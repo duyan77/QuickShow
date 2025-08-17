@@ -6,11 +6,18 @@ import { clerkMiddleware } from "@clerk/express";
 import indexRouter from "./routes/indexRoutes.js";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
+import { stripeWebhooks } from "./controllers/stripeWebhooks.js";
 
 const app = express();
 const port = 3000;
 
 await connectDB();
+
+app.use(
+  "/api/stripe",
+  express.raw({ type: "application/json" }),
+  stripeWebhooks
+);
 
 // Middleware
 app.use(express.json());
