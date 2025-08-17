@@ -3,13 +3,7 @@ import cors from "cors";
 import "dotenv/config";
 import connectDB from "./configs/db.js";
 import { clerkMiddleware } from "@clerk/express";
-import { serve } from "inngest/express";
-import { inngest, functions } from "./inngest/index.js";
-import showRouter from "./routes/showRoutes.js";
-import bookingRouter from "./routes/bookingRoutes.js";
-import adminRouter from "./routes/adminRoutes.js";
-import userRouter from "./routes/userRoutes.js";
-import { stripeWebhooks } from "./controllers/stripeWebhooks.js";
+import indexRouter from "./routes/indexRoutes.js";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 
@@ -17,13 +11,6 @@ const app = express();
 const port = 3000;
 
 await connectDB();
-
-// Stripe Webhooks Route
-app.use(
-  "/api/stripe",
-  express.raw({ type: "application/json" }),
-  stripeWebhooks
-);
 
 // Middleware
 app.use(express.json());
@@ -52,12 +39,7 @@ const swaggerDocs = swaggerJSDoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // API Routes
-app.get("/", (req, res) => res.send("Server is Live!"));
-app.use("/api/inngest", serve({ client: inngest, functions }));
-app.use("/show", showRouter);
-app.use("/booking", bookingRouter);
-app.use("/admin", adminRouter);
-app.use("/user", userRouter);
+app.use("/", indexRouter);
 
 app.listen(port, () =>
   console.log(`Server listening at http://localhost:${port}`)
