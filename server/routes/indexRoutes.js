@@ -9,10 +9,10 @@ import { stripeWebhooks } from "../controllers/stripeWebhooks.js";
 
 const router = express.Router();
 router.get("/", (req, res) => res.send("Server is Live!"));
-app.use("/show", showRouter);
-app.use("/booking", bookingRouter);
-app.use("/admin", adminRouter);
-app.use("/user", userRouter);
+router.use("/show", showRouter);
+router.use("/booking", bookingRouter);
+router.use("/admin", adminRouter);
+router.use("/user", userRouter);
 router.use("/api/inngest", serve({ client: inngest, functions }));
 router.use(
   "/api/stripe",
