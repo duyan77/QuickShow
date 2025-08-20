@@ -3,7 +3,7 @@ import User from "../models/User.js";
 import Booking from "../models/Booking.js";
 import Show from "../models/Show.js";
 import sendEmail from "../configs/nodeMailer.js";
-import { set } from "mongoose";
+import { Set } from "mongoose";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "movie-ticket-booking" });
@@ -124,25 +124,23 @@ const sendBookingConfirmationEmail = inngest.createFunction(
 // Hàm để gửi nhắc nhở cho người dùng về các buổi chiếu sắp tới
 const sendShowReminders = inngest.createFunction(
   { id: "send-show-reminders" },
-  { cron: "0 */8 * * *" }, // Mỗi 8 giờ
+  { cron: "*/10 * * * *" }, // chạy mỗi 10 phút
   async ({ step }) => {
     const now = new Date();
-    const in8Hours = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-    const windowStart = new Date(in8Hours.getTime() - 10 * 60 * 1000);
+    const in10Min = new Date(now.getTime() + 10 * 60 * 1000); // 10 phút tới
 
-    // Prepare reminder tasks
-    const reminderTasks = await step.run("prepare-reminder-tasks", async () => {
+    // Chuẩn bị danh sách nhắc nhở
+    const reminderTasks = await step.run("prepare-tasks", async () => {
       const shows = await Show.find({
-        showTime: { $gte: windowStart, $lte: in8Hours },
+        showTime: { $gte: now, $lte: in10Min },
       }).populate("movie");
 
       const tasks = [];
-
       for (const show of shows) {
         if (!show.movie || !show.occupiedSeats) continue;
 
         const userIds = [...new Set(Object.values(show.occupiedSeats))];
-        if (userIds.length === 0) continue;
+        if (!userIds.length) continue;
 
         const users = await User.find({ _id: { $in: userIds } }).select(
           "name email"
@@ -160,59 +158,18 @@ const sendShowReminders = inngest.createFunction(
       return tasks;
     });
 
-    if (reminderTasks.length === 0) {
+    if (!reminderTasks.length) {
       return { sent: 0, message: "No reminders to send." };
     }
 
-    // Send reminder emails
-    const sendShowReminders = inngest.createFunction(
-      { id: "send-show-reminders" },
-      { cron: "*/10 * * * *" }, // chạy mỗi 10 phút
-      async ({ step }) => {
-        const now = new Date();
-        const in10Min = new Date(now.getTime() + 10 * 60 * 1000); // 10 phút tới
-
-        // Chuẩn bị danh sách nhắc nhở
-        const reminderTasks = await step.run("prepare-tasks", async () => {
-          const shows = await Show.find({
-            showTime: { $gte: now, $lte: in10Min },
-          }).populate("movie");
-
-          const tasks = [];
-          for (const show of shows) {
-            if (!show.movie || !show.occupiedSeats) continue;
-
-            const userIds = [...new Set(Object.values(show.occupiedSeats))];
-            if (!userIds.length) continue;
-
-            const users = await User.find({ _id: { $in: userIds } }).select(
-              "name email"
-            );
-
-            for (const user of users) {
-              tasks.push({
-                userEmail: user.email,
-                userName: user.name,
-                movieTitle: show.movie.title,
-                showTime: show.showTime,
-              });
-            }
-          }
-          return tasks;
-        });
-
-        if (!reminderTasks.length) {
-          return { sent: 0, message: "No reminders to send." };
-        }
-
-        // Gửi email nhắc nhở
-        const results = await step.run("send-all-reminders", async () => {
-          return await Promise.allSettled(
-            reminderTasks.map((task) =>
-              sendEmail({
-                to: task.userEmail,
-                subject: `Reminder: Your movie "${task.movieTitle}" starts soon!`,
-                body: `<div style="font-family: Arial, sans-serif; padding: 20px;">
+    // Gửi email nhắc nhở
+    const results = await step.run("send-all-reminders", async () => {
+      return await Promise.allSettled(
+        reminderTasks.map((task) =>
+          sendEmail({
+            to: task.userEmail,
+            subject: `Reminder: Your movie "${task.movieTitle}" starts soon!`,
+            body: `<div style="font-family: Arial, sans-serif; padding: 20px;">
                     <h2>Hello ${task.userName},</h2>
                     <p>This is a quick reminder that your movie:</p>
                     <h3 style="color: #F84565;">"${task.movieTitle}"</h3>
@@ -235,21 +192,10 @@ const sendShowReminders = inngest.createFunction(
                     <br/>
                     <p>Enjoy the show!<br/>QuickShow Team</p>
                   </div>`,
-              })
-            )
-          );
-        });
-
-        const sent = results.filter((r) => r.status === "fulfilled").length;
-        const failed = results.length - sent;
-
-        return {
-          sent,
-          failed,
-          message: `Sent ${sent} reminder(s), ${failed} failed.`,
-        };
-      }
-    );
+          })
+        )
+      );
+    });
 
     const sent = results.filter((r) => r.status === "fulfilled").length;
     const failed = results.length - sent;
