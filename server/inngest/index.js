@@ -121,10 +121,10 @@ const sendBookingConfirmationEmail = inngest.createFunction(
   }
 );
 
-// Inngest Function to send reminders
+// Hàm để gửi nhắc nhở cho người dùng về các buổi chiếu sắp tới
 const sendShowReminders = inngest.createFunction(
   { id: "send-show-reminders" },
-  { cron: "0 */8 * * *" }, // Every 8 hours
+  { cron: "0 */8 * * *" }, // Mỗi 8 giờ
   async ({ step }) => {
     const now = new Date();
     const in8Hours = new Date(now.getTime() + 8 * 60 * 60 * 1000);
