@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from "react";
-// import { dummyShowsData } from "../../assets/assets";
 import Loading from "../../components/Loading";
 import Title from "../../components/admin/Title";
 import { CheckIcon, DeleteIcon, StarIcon } from "lucide-react";
 import { kConverter } from "../../lib/kConverter";
 import toast from "react-hot-toast";
 import { useAppContext } from "../../context/AppContext";
-// import toast from "react-hot-toast";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const AddShows = () => {
   const { axios, getToken, user, image_base_url } = useAppContext();
@@ -18,6 +22,7 @@ const AddShows = () => {
   const [showPrice, setShowPrice] = useState("");
   const [addingShow, setAddingShow] = useState(false);
 
+  // Fetch now playing movies
   const fetchNowPlayingMovies = async () => {
     try {
       const { data } = await axios.get("/show/now-playing", {
@@ -32,6 +37,7 @@ const AddShows = () => {
     }
   };
 
+  // Add date-time selection
   const handleDateTimeAdd = () => {
     if (!dateTimeInput) return;
     const [date, time] = dateTimeInput.split("T");
@@ -46,6 +52,7 @@ const AddShows = () => {
     });
   };
 
+  // Remove date-time
   const handleRemoveTime = (date, time) => {
     setDateTimeSelection((prev) => {
       const filteredTimes = prev[date].filter((t) => t !== time);
@@ -60,6 +67,7 @@ const AddShows = () => {
     });
   };
 
+  // Submit show data
   const handleSubmit = async () => {
     try {
       setAddingShow(true);
@@ -69,12 +77,22 @@ const AddShows = () => {
         Object.keys(dateTimeSelection).length === 0 ||
         !showPrice
       ) {
-        return toast("Missing required fields");
+        setAddingShow(false);
+        return toast.error("Missing required fields");
       }
 
-      const showsInput = Object.entries(dateTimeSelection).map(
-        ([date, time]) => ({ date, time })
-      );
+      // Convert local datetime to UTC ISO
+      const showsInput = Object.entries(dateTimeSelection)
+        .map(([date, times]) =>
+          times.map((time) => {
+            const localDateTime = dayjs.tz(
+              `${date}T${time}`,
+              "Asia/Ho_Chi_Minh"
+            );
+            return { dateTime: localDateTime.toISOString() }; // always store UTC
+          })
+        )
+        .flat();
 
       const payload = {
         movieId: selectedMovie,
@@ -91,6 +109,7 @@ const AddShows = () => {
         setSelectedMovie(null);
         setDateTimeSelection({});
         setShowPrice("");
+        setDateTimeInput("");
       } else {
         toast.error(data.message);
       }
@@ -117,22 +136,18 @@ const AddShows = () => {
             <div
               key={movie.id}
               className={`
-                  relative max-w-40 cursor-pointer transition duration-300 
-                  ${
-                    selectedMovie && selectedMovie !== movie.id
-                      ? "opacity-40"
-                      : "opacity-100"
-                  } 
-                  ${selectedMovie === movie.id ? "top-[-0.75rem]" : ""}
-                  hover:-translate-y-1
-                `}
-              onClick={() => {
-                if (selectedMovie === movie.id) {
-                  setSelectedMovie(null); // Deselect
-                } else {
-                  setSelectedMovie(movie.id);
-                }
-              }}
+                relative max-w-40 cursor-pointer transition duration-300 
+                ${
+                  selectedMovie && selectedMovie !== movie.id
+                    ? "opacity-40"
+                    : "opacity-100"
+                } 
+                ${selectedMovie === movie.id ? "top-[-0.75rem]" : ""}
+                hover:-translate-y-1
+              `}
+              onClick={() =>
+                setSelectedMovie(selectedMovie === movie.id ? null : movie.id)
+              }
             >
               <div className="relative rounded-lg overflow-hidden">
                 <img
@@ -202,7 +217,7 @@ const AddShows = () => {
       {/* Display Selected Times */}
       {Object.keys(dateTimeSelection).length > 0 && (
         <div className="mt-6">
-          <h2 className=" mb-2">Selected Date-Time</h2>
+          <h2 className="mb-2">Selected Date-Time</h2>
           <ul className="space-y-3">
             {Object.entries(dateTimeSelection).map(([date, times]) => (
               <li key={date}>
@@ -213,7 +228,10 @@ const AddShows = () => {
                       key={time}
                       className="border border-primary px-2 py-1 flex items-center rounded"
                     >
-                      <span>{time}</span>
+                      <span>
+                        {/* format lại cho dễ đọc */}
+                        {dayjs(`${date}T${time}`).format("HH:mm")}
+                      </span>
                       <DeleteIcon
                         onClick={() => handleRemoveTime(date, time)}
                         width={15}

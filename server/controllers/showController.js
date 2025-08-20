@@ -60,16 +60,14 @@ export const addShow = async (req, res) => {
     }
 
     const showsToCreate = [];
+
     showsInput.forEach((show) => {
-      const showDate = show.date;
-      show.time.forEach((time) => {
-        const dateTimeString = `${showDate}T${time}`;
-        showsToCreate.push({
-          movie: movieId,
-          showDateTime: new Date(dateTimeString),
-          showPrice,
-          occupiedSeats: {},
-        });
+      // show có dạng { dateTime: "2025-08-20T04:24:00.000Z" }
+      showsToCreate.push({
+        movie: movieId,
+        showDateTime: show.dateTime, // giữ nguyên ISO string
+        showPrice,
+        occupiedSeats: {},
       });
     });
 
