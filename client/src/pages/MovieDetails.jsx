@@ -95,7 +95,7 @@ const MovieDetails = () => {
           </p>
 
           <div className="flex items-center flex-wrap gap-4 mt-4">
-            <TrailerButton videoKey={show.trailer.key} />
+            <TrailerButton videoKey={show.trailer?.key} />
             <a
               href="#dateSelect"
               className="px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer active:scale-95"
