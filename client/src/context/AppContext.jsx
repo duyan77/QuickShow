@@ -16,6 +16,7 @@ export const AppProvider = ({ children }) => {
   const [favoriteMovies, setFavoriteMovies] = useState([]);
 
   const image_base_url = import.meta.env.VITE_TMDB_IMAGE_BASE_URL;
+  const tmdb_api_key = import.meta.env.VITE_TMDB_API_KEY;
 
   const { user } = useUser();
   const { getToken } = useAuth();
@@ -90,6 +91,7 @@ export const AppProvider = ({ children }) => {
     favoriteMovies,
     fetchFavoriteMovies,
     image_base_url,
+    tmdb_api_key,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

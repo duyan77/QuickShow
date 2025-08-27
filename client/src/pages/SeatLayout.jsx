@@ -7,6 +7,7 @@ import BlurCircle from "../components/BlurCircle";
 import toast from "react-hot-toast";
 import { useAppContext } from "../context/AppContext";
 import { assets } from "../assets/assets";
+import drawNotify from "../lib/drawNotify";
 
 const SeatLayout = () => {
   const groupRows = [
@@ -104,8 +105,8 @@ const SeatLayout = () => {
       );
 
       if (data.success) {
-        toast.success("Booking successful");
-        window.location.href = data.url; // chuyển hướng đến trang thanh toán
+        drawNotify("success", "Please pay within 10 minutes");
+        window.location.href = data.url;
       } else {
         toast.error(data.message);
       }

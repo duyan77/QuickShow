@@ -6,6 +6,7 @@ import timeFormat from "../lib/timeFormat";
 import { dateFormat } from "../lib/dateFormat";
 import { useAppContext } from "../context/AppContext";
 import { Link } from "react-router-dom";
+import CountdownTimer from "../components/CountdownTimer";
 
 const MyBookings = () => {
   const currency = import.meta.env.VITE_CURRENCY;
@@ -54,8 +55,13 @@ const MyBookings = () => {
               alt=""
               className="md:max-w-45 aspect-video h-auto object-cover object-bottom rounded"
             />
-            <div className="flex flex-col p-4">
-              <p className="text-lg font-semibold">{item.show.movie.title}</p>
+            <div className="flex flex-col p-4 md:max-w-[400px]">
+              <p
+                className="text-lg font-semibold truncate"
+                title={item.show.movie.title}
+              >
+                {item.show.movie.title}
+              </p>
               <p className="text-gray-400 text-sm">
                 {timeFormat(item.show.movie.runtime)}
               </p>
@@ -65,6 +71,7 @@ const MyBookings = () => {
             </div>
           </div>
 
+          {/* Phần book vé */}
           <div className="flex flex-col md:items-end md:text-right justify-between p-4">
             <div className="flex items-center gap-4">
               <p className="text-2xl font-semibold mb-3">
@@ -80,7 +87,15 @@ const MyBookings = () => {
                 </Link>
               )}
             </div>
-            <div className="text-sm">
+            {/* Countdown Timer */}
+            {!item.isPaid && (
+              <CountdownTimer
+                createdAt={item.createdAt}
+                onExpire={getMyBookings} // hết hạn thì gọi lại API
+              />
+            )}
+
+            <div className="text-sm mt-2">
               <p>
                 <span className="text-gray-400">Total Tickets:</span>{" "}
                 {item.bookedSeats.length}

@@ -10,6 +10,7 @@ import ShowMoreButton from "../components/ShowMoreButton";
 import Loading from "../components/Loading";
 import { useAppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
+import TrailerButton from "../components/TrailerButton";
 
 const MovieDetails = () => {
   const { id } = useParams();
@@ -23,12 +24,25 @@ const MovieDetails = () => {
     fetchFavoriteMovies,
     favoriteMovies,
     image_base_url,
+    tmdb_api_key,
   } = useAppContext();
 
   const getShow = async () => {
     try {
       const { data } = await axios.get(`/show/${id}`);
       if (data.success) {
+        let trailer = await axios.get(
+          `https://api.themoviedb.org/3/movie/${id}/videos`,
+          {
+            headers: {
+              Authorization: `Bearer ${tmdb_api_key}`,
+            },
+          }
+        );
+        trailer = trailer.data.results.find(
+          (vid) => vid.name === "Official Trailer" && vid.type === "Trailer"
+        );
+        data.trailer = trailer;
         setShow(data);
       }
     } catch (error) {
@@ -89,10 +103,7 @@ const MovieDetails = () => {
           </p>
 
           <div className="flex items-center flex-wrap gap-4 mt-4">
-            <button className="flex items-center gap-2 px-7 py-3 text-sm bg-gray-800 hover:bg-gray-900 transition rounded-md font-medium cursor-pointer active:scale-95">
-              <PlayCircleIcon className="w-5 h-5" />
-              Watch Trailer
-            </button>
+            <TrailerButton videoKey={show.trailer.key} />
             <a
               href="#dateSelect"
               className="px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer active:scale-95"

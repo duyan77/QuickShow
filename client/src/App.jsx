@@ -17,11 +17,21 @@ import { useAppContext } from "./context/AppContext";
 import { SignIn } from "@clerk/clerk-react";
 import Loading from "./components/Loading";
 import NavBar from "./components/NavBar";
+import toast from "react-hot-toast";
 
 const App = () => {
   const isAdminRoute = useLocation().pathname.startsWith("/admin");
 
   const { user } = useAppContext();
+
+  let notify = sessionStorage.getItem("notify");
+  if (notify) {
+    notify = JSON.parse(notify);
+    if (notify.code === "success") {
+      toast.success(notify.message);
+    }
+    sessionStorage.removeItem("notify");
+  }
 
   return (
     <>
