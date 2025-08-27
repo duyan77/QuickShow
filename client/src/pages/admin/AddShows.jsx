@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useRef, useState } from "react";
 import Loading from "../../components/Loading";
 import Title from "../../components/admin/Title";
 import { CheckIcon, DeleteIcon, StarIcon } from "lucide-react";
@@ -8,6 +8,7 @@ import { useAppContext } from "../../context/AppContext";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -15,29 +16,47 @@ dayjs.extend(timezone);
 const AddShows = () => {
   const { axios, getToken, user, image_base_url } = useAppContext();
   const currency = import.meta.env.VITE_CURRENCY;
-  const [nowPlayingMovies, setNowPlayingMovies] = useState([]);
+
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [dateTimeSelection, setDateTimeSelection] = useState({});
   const [dateTimeInput, setDateTimeInput] = useState("");
   const [showPrice, setShowPrice] = useState("");
   const [addingShow, setAddingShow] = useState(false);
 
-  // Fetch now playing movies
-  const fetchNowPlayingMovies = async () => {
-    try {
-      const { data } = await axios.get("/show/now-playing", {
-        headers: { Authorization: `Bearer ${await getToken()}` },
-      });
+  const scrollContainerRef = useRef(null);
 
-      if (data.success) {
-        setNowPlayingMovies(data.movies);
-      }
-    } catch (error) {
-      console.log(error);
+  const { data, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage } =
+    useInfiniteQuery({
+      queryKey: ["nowPlayingMovies"],
+      queryFn: async ({ pageParam = 1 }) => {
+        const token = await getToken();
+        const { data } = await axios.get(
+          `/show/now-playing?page=${pageParam}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        return data; // { page, total_pages, movies }
+      },
+      getNextPageParam: (lastPage) =>
+        lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
+      enabled: !!user,
+    });
+
+  const movies = data?.pages.flatMap((page) => page.movies) || [];
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container || isFetchingNextPage || !hasNextPage) return;
+
+    if (
+      container.scrollLeft + container.clientWidth >=
+      container.scrollWidth - 10
+    ) {
+      fetchNextPage();
     }
   };
 
-  // Add date-time selection
   const handleDateTimeAdd = () => {
     if (!dateTimeInput) return;
     const [date, time] = dateTimeInput.split("T");
@@ -45,14 +64,11 @@ const AddShows = () => {
 
     setDateTimeSelection((prev) => {
       const times = prev[date] || [];
-      if (!times.includes(time)) {
-        return { ...prev, [date]: [...times, time] };
-      }
+      if (!times.includes(time)) return { ...prev, [date]: [...times, time] };
       return prev;
     });
   };
 
-  // Remove date-time
   const handleRemoveTime = (date, time) => {
     setDateTimeSelection((prev) => {
       const filteredTimes = prev[date].filter((t) => t !== time);
@@ -60,91 +76,81 @@ const AddShows = () => {
         const { [date]: _, ...rest } = prev;
         return rest;
       }
-      return {
-        ...prev,
-        [date]: filteredTimes,
-      };
+      return { ...prev, [date]: filteredTimes };
     });
   };
 
-  // Submit show data
   const handleSubmit = async () => {
+    if (
+      !selectedMovie ||
+      !showPrice ||
+      Object.keys(dateTimeSelection).length === 0
+    ) {
+      return toast.error("Missing required fields");
+    }
+
     try {
       setAddingShow(true);
 
-      if (
-        !selectedMovie ||
-        Object.keys(dateTimeSelection).length === 0 ||
-        !showPrice
-      ) {
-        setAddingShow(false);
-        return toast.error("Missing required fields");
-      }
-
-      // Convert local datetime to UTC ISO
-      const showsInput = Object.entries(dateTimeSelection)
-        .map(([date, times]) =>
-          times.map((time) => {
-            const localDateTime = dayjs.tz(
-              `${date}T${time}`,
-              "Asia/Ho_Chi_Minh"
-            );
-            return { dateTime: localDateTime.toISOString() }; // always store UTC
-          })
-        )
-        .flat();
+      const showsInput = Object.entries(dateTimeSelection).flatMap(
+        ([date, times]) =>
+          times.map((time) => ({
+            dateTime: dayjs
+              .tz(`${date}T${time}`, "Asia/Ho_Chi_Minh")
+              .toISOString(),
+          }))
+      );
 
       const payload = {
         movieId: selectedMovie,
         showsInput,
         showPrice: Number(showPrice),
       };
-
-      const { data } = await axios.post("/show/add", payload, {
+      const { data: res } = await axios.post("/show/add", payload, {
         headers: { Authorization: `Bearer ${await getToken()}` },
       });
 
-      if (data.success) {
-        toast.success(data.message);
+      if (res.success) {
+        toast.success(res.message);
         setSelectedMovie(null);
         setDateTimeSelection({});
         setShowPrice("");
         setDateTimeInput("");
       } else {
-        toast.error(data.message);
+        toast.error(res.message);
       }
     } catch (error) {
-      console.error("Submission error:", error);
+      console.error(error);
       toast.error("An error occurred. Please try again.");
+    } finally {
+      setAddingShow(false);
     }
-    setAddingShow(false);
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchNowPlayingMovies();
-    }
-  }, [user]);
+  if (isLoading) return <Loading />;
 
-  return nowPlayingMovies.length > 0 ? (
+  return (
     <>
       <Title text1="Add" text2="Shows" />
+
       <p className="mt-10 text-lg font-medium">Now Playing Movies</p>
-      <div className="overflow-x-auto pb-4">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="overflow-x-auto pb-4"
+      >
         <div className="group flex flex-wrap gap-4 mt-4 w-max">
-          {nowPlayingMovies.map((movie) => (
+          {movies.map((movie) => (
             <div
               key={movie.id}
-              className={`
-                relative max-w-40 cursor-pointer transition duration-300 
+              className={`relative max-w-40 cursor-pointer transition duration-300
                 ${
                   selectedMovie && selectedMovie !== movie.id
                     ? "opacity-40"
                     : "opacity-100"
-                } 
+                }
                 ${selectedMovie === movie.id ? "top-[-0.75rem]" : ""}
-                hover:-translate-y-1
-              `}
+                hover:-translate-y-1`}
               onClick={() =>
                 setSelectedMovie(selectedMovie === movie.id ? null : movie.id)
               }
@@ -152,7 +158,7 @@ const AddShows = () => {
               <div className="relative rounded-lg overflow-hidden">
                 <img
                   src={image_base_url + movie.poster_path}
-                  alt=""
+                  alt={movie.title}
                   className="w-full object-cover brightness-90"
                 />
                 <div className="text-sm flex items-center justify-between p-2 bg-black/70 w-full absolute bottom-0 left-0">
@@ -174,10 +180,14 @@ const AddShows = () => {
               <p className="text-gray-400 text-sm">{movie.release_date}</p>
             </div>
           ))}
+          {isFetchingNextPage && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-50">
+              <Loading />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Show Price Input */}
       <div className="mt-8">
         <label className="block text-sm font-medium mb-2">Show Price</label>
         <div className="inline-flex items-center gap-2 border border-gray-600 px-3 py-2 rounded-md">
@@ -193,7 +203,6 @@ const AddShows = () => {
         </div>
       </div>
 
-      {/* Date & Time Selection */}
       <div className="mt-6">
         <label className="block text-sm font-medium mb-2">
           Select Date and Time
@@ -214,7 +223,6 @@ const AddShows = () => {
         </div>
       </div>
 
-      {/* Display Selected Times */}
       {Object.keys(dateTimeSelection).length > 0 && (
         <div className="mt-6">
           <h2 className="mb-2">Selected Date-Time</h2>
@@ -228,10 +236,7 @@ const AddShows = () => {
                       key={time}
                       className="border border-primary px-2 py-1 flex items-center rounded"
                     >
-                      <span>
-                        {/* format lại cho dễ đọc */}
-                        {dayjs(`${date}T${time}`).format("HH:mm")}
-                      </span>
+                      <span>{dayjs(`${date}T${time}`).format("HH:mm")}</span>
                       <DeleteIcon
                         onClick={() => handleRemoveTime(date, time)}
                         width={15}
@@ -245,16 +250,17 @@ const AddShows = () => {
           </ul>
         </div>
       )}
-      <button
-        onClick={handleSubmit}
-        disabled={addingShow}
-        className="bg-primary text-white px-8 py-2 mt-6 rounded hover:bg-primary/90 transition-all cursor-pointer"
-      >
-        Add Show
-      </button>
+
+      <div className="mt-6">
+        <button
+          onClick={handleSubmit}
+          disabled={addingShow}
+          className="bg-primary text-white px-5 py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 cursor-pointer"
+        >
+          {addingShow ? "Adding..." : "Add Show"}
+        </button>
+      </div>
     </>
-  ) : (
-    <Loading />
   );
 };
 

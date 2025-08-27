@@ -6,14 +6,23 @@ import { inngest } from "../inngest/index.js";
 // API để lấy danh sách phim đang chiếu từ TMDB API
 export const getNowPlayingMovies = async (req, res) => {
   try {
+    const page = req.query.page || 1; // nhận page từ client
+
     const { data } = await axios.get(
       "https://api.themoviedb.org/3/movie/now_playing",
       {
+        params: { language: "en-US", page },
         headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
       }
     );
+
     const movies = data.results;
-    res.status(200).json({ success: true, movies: movies });
+    res.json({
+      success: true,
+      page: data.page,
+      total_pages: data.total_pages,
+      movies: data.results,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });
@@ -93,14 +102,36 @@ export const addShow = async (req, res) => {
 // API to get all shows from the database
 export const getShows = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    // Lấy tất cả show từ hôm nay trở đi
     const shows = await Show.find({ showDateTime: { $gte: new Date() } })
       .populate("movie")
       .sort({ showDateTime: 1 });
 
-    // filter unique shows
-    const uniqueShows = new Set(shows.map((show) => show.movie));
+    // Lọc unique movies
+    const uniqueMoviesMap = new Map();
+    shows.forEach((show) => {
+      if (!uniqueMoviesMap.has(show.movie._id.toString())) {
+        uniqueMoviesMap.set(show.movie._id.toString(), show.movie);
+      }
+    });
+    const uniqueMovies = Array.from(uniqueMoviesMap.values());
 
-    res.status(200).json({ success: true, shows: Array.from(uniqueShows) });
+    // Phân trang trên mảng movie duy nhất
+    const start = (page - 1) * limit;
+    const paginatedMovies = uniqueMovies.slice(start, start + limit);
+    const totalPages = Math.ceil(uniqueMovies.length / limit);
+    const hasNextPage = page < totalPages;
+
+    res.status(200).json({
+      success: true,
+      shows: paginatedMovies,
+      page,
+      totalPages,
+      hasNextPage,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });

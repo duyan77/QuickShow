@@ -107,7 +107,7 @@ const MovieDetails = () => {
               className="bg-gray-700 p-2.5 rounded-full transition cursor-pointer active:scale-95"
             >
               <Heart
-                className={`w-5 h-5 ${
+                className={`w-5 h-5 hover:fill-primary hover:text-primary ${
                   favoriteMovies.find((movie) => movie._id === id)
                     ? "fill-primary text-primary"
                     : ""
