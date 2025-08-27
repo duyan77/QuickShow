@@ -134,3 +134,34 @@ export const getShow = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// API to get trailer
+export const getTrailer = async (req, res) => {
+  try {
+    const { movieId } = req.params;
+    const movie = await Movie.findById(movieId);
+
+    if (!movie) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Movie not found" });
+    }
+
+    // Call TMDB API to get the trailer
+    const response = await axios.get(
+      `https://api.themoviedb.org/3/movie/${movieId}/videos`,
+      {
+        headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
+      }
+    );
+
+    const trailers = response.data.results.filter(
+      (video) => video.type === "Trailer"
+    );
+
+    res.status(200).json({ success: true, trailers });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

@@ -24,23 +24,15 @@ const MovieDetails = () => {
     fetchFavoriteMovies,
     favoriteMovies,
     image_base_url,
-    tmdb_api_key,
   } = useAppContext();
 
   const getShow = async () => {
     try {
       const { data } = await axios.get(`/show/${id}`);
       if (data.success) {
-        let trailer = await axios.get(
-          `https://api.themoviedb.org/3/movie/${id}/videos`,
-          {
-            headers: {
-              Authorization: `Bearer ${tmdb_api_key}`,
-            },
-          }
-        );
-        trailer = trailer.data.results.find(
-          (vid) => vid.name === "Official Trailer" && vid.type === "Trailer"
+        let trailer = await axios.get(`/show/${id}/trailer`);
+        trailer = trailer.data.trailers.find(
+          (vid) => vid.name === "Official Trailer" && vid.site === "YouTube"
         );
         data.trailer = trailer;
         setShow(data);

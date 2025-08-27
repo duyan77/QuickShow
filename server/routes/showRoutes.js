@@ -4,6 +4,7 @@ import {
   getNowPlayingMovies,
   getShow,
   getShows,
+  getTrailer,
 } from "../controllers/showController.js";
 import { protectAdmin } from "../middleware/auth.js";
 
@@ -97,5 +98,6 @@ showRouter.get("/now-playing", protectAdmin, getNowPlayingMovies);
 showRouter.post("/add", protectAdmin, addShow);
 showRouter.get("/all", getShows);
 showRouter.get("/:movieId", getShow);
+showRouter.get("/:movieId/trailer", getTrailer);
 
 export default showRouter;
