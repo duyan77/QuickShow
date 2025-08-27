@@ -30,28 +30,34 @@ const Movies = () => {
   console.log(allMovies);
 
   return (
-    <div className="relative my-40 mb-60 px-6 md:px-16 lg:px-40 xl:px-44 overflow-hidden min-h-[80vh]">
-      <BlurCircle top="150px" left="0px" />
-      <BlurCircle bottom="50px" right="50px" />
-      <h1 className="text-lg font-medium my-4">Now Showing</h1>
+    <>
+      {/* Phần header + background */}
+      <div className="relative mt-40 px-6 md:px-16 lg:px-40 xl:px-44">
+        <BlurCircle top="150px" left="0px" />
+        <BlurCircle bottom="50px" right="50px" />
+        <h1 className="text-lg font-medium my-16">Now Showing</h1>
+      </div>
 
-      <InfiniteScroll
-        dataLength={allMovies.length}
-        next={fetchNextPage}
-        hasMore={hasNextPage}
-        loader={
-          <h4 className="text-center mt-10">
-            <Loading />
-          </h4>
-        }
-        endMessage={""}
-        className="flex flex-wrap max-sm:justify-center gap-8"
-      >
-        {allMovies.map((movie) => (
-          <MovieCard key={movie._id} movie={movie} />
-        ))}
-      </InfiniteScroll>
-    </div>
+      {/* Danh sách phim */}
+      <div className="px-6 md:px-16 lg:px-40 xl:px-44">
+        <InfiniteScroll
+          dataLength={allMovies.length}
+          next={fetchNextPage}
+          hasMore={hasNextPage}
+          loader={
+            <div className="flex justify-center py-10">
+              <Loading />
+            </div>
+          }
+          endMessage={""}
+          className="flex flex-wrap max-sm:justify-center gap-8"
+        >
+          {allMovies.map((movie) => (
+            <MovieCard key={movie._id} movie={movie} />
+          ))}
+        </InfiniteScroll>
+      </div>
+    </>
   );
 };
 
