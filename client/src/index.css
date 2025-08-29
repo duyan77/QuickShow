@@ -62,5 +62,7 @@ input::-webkit-inner-spin-button {
 }
 
 /* slide css */
-
+.swiper-pagination-bullet {
+  background-color: #fff !important;
+}
 /* End slide css */
