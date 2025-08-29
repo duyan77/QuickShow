@@ -31,7 +31,7 @@ const HeroSection = () => {
       modules={[Autoplay, Pagination, Navigation]}
       className="mySwiper"
     >
-      {shows.map((movie) => (
+      {shows.slice(0, 6).map((movie) => (
         <SwiperSlide key={movie._id}>
           <div
             className="relative flex flex-col justify-center gap-6 px-6 md:px-16 lg:px-36 h-screen bg-cover bg-center"
