@@ -12,6 +12,11 @@
   scrollbar-color: #787777 #1e1e1e;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 body {
   color: white;
   background-color: #09090b;
